@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的午饭即将坍缩。。。</title>
+    <style>
+        /* 全局样式 */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            overflow: hidden;
+        }
+        
+        /* 密码验证模态框 */
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+        }
+        
+        .password-container {
+            background-color: #2c3e50;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        .password-error {
+            color: #e74c3c;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* 加密函数（简化版）- 实际项目中应使用更安全的加密方式 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .container {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .result-container {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 30px 0;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            border: 2px solid #3498db;
+        }
+        .result {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3498db;
+            text-align: center;
+            transition: all 0.3s ease;
+            opacity: 0; /* 默认隐藏 */
+            position: absolute;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: 10; /* 确保在最上层显示 */
+        }
+        .result.show {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .rolling {
+            animation: roll 0.08s linear infinite;
+        }
+        @keyframes roll {
+            0% { transform: translateY(0); opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+        .result-item {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #3498db;
+            opacity: 0;
+        }
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .back-btn {
+            margin-top: 20px;
+            background-color: #95a5a6;
+        }
+        .back-btn:hover {
+            background-color: #7f8c8d;
+        }
+        .options-list {
+            margin-top: 20px;
+            text-align: left;
+            padding-left: 20px;
+        }
+        .options-list li {
+            margin-bottom: 5px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <!-- 密码验证模态框 -->
+    <div id="password-modal" class="password-modal">
+        <div class="password-container">
+            <h2>只有掌握真理的人，才能吃午饭！！！</h2>
+            <input type="password" id="password-input" class="password-input" placeholder="输入真理...">
+            <p id="password-error" class="password-error" style="font-size: 50px;">你没有掌握真理，回去干活吧</p>
+        </div>
+    </div>
+    
+    <!-- 主内容区（默认隐藏） -->
+    <div id="main-content" class="container hidden">
+        <div class="options-list">
+            <p><strong>上帝的骰子上，点点金光，闪烁着神秘的光芒。</strong></p>
+            <ol id="options-list"></ol>
+        </div>
+        
+        <script>
+            // 动态生成选项列表
+            document.addEventListener('DOMContentLoaded', function() {
+                const optionsList = document.getElementById('options-list');
+                LUNCH_OPTIONS.forEach(option => {
+                    const li = document.createElement('li');
+                    li.textContent = option;
+                    optionsList.appendChild(li);
+                });
+            });
+        </script>
+        <div class="result-container">
+            <div id="result" class="result"></div>
+        </div>
+        <button id="decide-btn" class="btn">帮我决定吃什么</button>
+        
+        <!-- 使用说明（移至页面底部） -->
+        <div style="margin-top: 50px; font-size: 12px; color: #666; text-align: left;">
+            <p>* 使用说明：在URL后添加 <code>?options=选项1,选项2,选项3</code> 来自定义午餐选项，例如：http://xxxxx/lunch_rolling.html?options=麦当劳,肯德基,星巴克 </p>
+        </div>
+    </div>
+
+    <!-- 密码验证脚本 -->
+    <script>
+        // 简化版哈希函数（不使用加密库的情况下）
+        function simpleHash(str) {
+            // 这不是真正的加密，只是一个简单的哈希函数示例
+            // 在实际项目中应使用更安全的加密方式
+            let hash = 0;
+            if (str.length === 0) return hash;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // 转换为32位整数
+            }
+            return Math.abs(hash).toString();
+        }
+        
+        // 页面加载时初始化密码验证
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordModal = document.getElementById('password-modal');
+            const mainContent = document.getElementById('main-content');
+            const passwordInput = document.getElementById('password-input');
+            const loginBtn = document.getElementById('login-btn');
+            const passwordError = document.getElementById('password-error');
+            
+            const correctPasswordHash = '3684317';
+            
+            // 密码验证函数
+            function validatePassword(password) {
+                // 比较用户输入的密码哈希与正确密码的哈希
+                return simpleHash(password) === correctPasswordHash;
+            }
+            
+            // 按Enter键验证密码
+            passwordInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    const password = passwordInput.value;
+                    if (validatePassword(password)) {
+                        // 密码正确，显示主内容
+                        passwordModal.classList.add('hidden');
+                        mainContent.classList.remove('hidden');
+                        document.body.style.overflow = 'auto';
+                    } else {
+                        // 密码错误，显示错误消息并跳转到百度首页
+                        passwordError.style.display = 'block';
+                        // 1秒后跳转到百度首页
+                        setTimeout(() => {
+                            window.location.href = 'https://www.cn-sga.com/about.html';
+                        }, 3000);
+                    }
+                }
+            });
+        });
+    </script>
+    
+    <!-- 配置变量 -->
+    <script>
+        // 从URL参数中获取选项或使用默认选项
+        let LUNCH_OPTIONS = [];
+        const DEFAULT_OPTIONS = [
+            '南昌拌粉',
+            '袁记云饺',
+            '草根食堂',
+            '盖浇饭',
+            '河南烩面',
+            '馄饨店',
+            '蒋师傅',
+            '兰州拉面'
+        ];
+        
+        // 初始化选项
+        function initOptions() {
+            try {
+                // 解析URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const optionsParam = urlParams.get('options');
+                
+                if (optionsParam) {
+                    // 解析逗号分隔的选项字符串
+                    LUNCH_OPTIONS = optionsParam.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+                    console.log('成功从URL参数加载选项');
+                } else {
+                    // 使用默认选项
+                    LUNCH_OPTIONS = DEFAULT_OPTIONS;
+                    console.log('使用默认选项');
+                }
+                
+                // 确保至少有一个选项
+                if (LUNCH_OPTIONS.length === 0) {
+                    LUNCH_OPTIONS = DEFAULT_OPTIONS;
+                }
+            } catch (e) {
+                console.error('解析URL参数失败，使用默认选项', e);
+                LUNCH_OPTIONS = DEFAULT_OPTIONS;
+            }
+        }
+        
+        // 初始化选项
+        initOptions();
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 只有在密码验证通过后才会执行此代码
+            const decideBtn = document.getElementById('decide-btn');
+            const resultContainer = document.querySelector('.result-container');
+            const resultElement = document.getElementById('result');
+            let options = LUNCH_OPTIONS; // 使用全局配置变量
+
+            // 创建额外的结果项用于动画
+            function createResultItems() {
+                // 清除之前的结果项
+                const oldItems = document.querySelectorAll('.result-item');
+                oldItems.forEach(item => item.remove());
+
+                // 创建新的结果项
+                for (let i = 0; i < 5; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.style.top = `${i * 60}px`;
+                    resultContainer.appendChild(item);
+                }
+            }
+
+            decideBtn.addEventListener('click', function() {
+                // 禁用按钮防止重复点击
+                decideBtn.disabled = true;
+                decideBtn.textContent = '世界线修改中...';
+
+                // 移除之前的结果显示类
+                resultElement.classList.remove('show');
+                resultElement.style.display = 'none';
+
+                // 清除之前可能存在的结果项
+                const oldItems = document.querySelectorAll('.result-item');
+                oldItems.forEach(item => item.remove());
+
+                // 创建多行跑马灯元素
+                const lineCount = 5; // 显示5行
+                const marqueeLines = [];
+                
+                for (let i = 0; i < lineCount; i++) {
+                    const lineElement = document.createElement('div');
+                    lineElement.className = 'marquee-line';
+                    lineElement.style.position = 'absolute';
+                    lineElement.style.width = '100%';
+                    lineElement.style.textAlign = 'center';
+                    lineElement.style.top = `${i * 40}px`;
+                    lineElement.style.left = '0';
+                    lineElement.style.fontSize = '28px';
+                    lineElement.style.fontWeight = 'bold';
+                    lineElement.style.color = '#3498db';
+                    lineElement.style.opacity = '0.7'; // 初始透明度较低
+                    resultContainer.appendChild(lineElement);
+                    marqueeLines.push(lineElement);
+                }
+
+                // 设置中间一行更突出
+                marqueeLines[Math.floor(lineCount/2)].style.opacity = '1';
+                marqueeLines[Math.floor(lineCount/2)].style.fontSize = '32px';
+
+                // 跑马灯配置
+                let currentIndex = 0;
+                let speed = 100; // 初始速度
+                const totalDuration = 5000; // 总持续时间5秒
+                const slowdownDuration = 1000; // 减速时间1秒
+                let startTime = Date.now();
+
+                // 跑马灯动画函数
+                function animateMarquee() {
+                    const currentTime = Date.now();
+                    const elapsedTime = currentTime - startTime;
+                    
+                    // 检查是否应该减速
+                    if (elapsedTime > totalDuration - slowdownDuration) {
+                        // 逐渐降低速度
+                        const slowdownFactor = (totalDuration - elapsedTime) / slowdownDuration;
+                        speed = 100 + (500 - 100) * (1 - slowdownFactor);
+                    }
+
+                    // 更新显示的选项，让多行显示不同的内容
+                    marqueeLines.forEach((line, index) => {
+                        // 每行显示不同的选项，形成滚动效果
+                        const lineIndex = (currentIndex + index) % options.length;
+                        line.textContent = options[lineIndex];
+                    });
+                    
+                    // 移动到下一个选项
+                    currentIndex = (currentIndex + 1) % options.length;
+
+                    // 检查是否应该停止
+                    if (elapsedTime < totalDuration) {
+                        setTimeout(animateMarquee, speed);
+                    } else {
+                        // 停止在随机选项上
+                        const finalIndex = Math.floor(Math.random() * options.length);
+                        
+                        // 更新所有行，确保中间行显示最终结果
+                        marqueeLines.forEach((line, index) => {
+                            const lineFinalIndex = (finalIndex + index - Math.floor(lineCount/2)) % options.length;
+                            line.textContent = options[lineFinalIndex < 0 ? lineFinalIndex + options.length : lineFinalIndex];
+                        });
+                        
+                        // 移除跑马灯元素，显示最终结果
+                        setTimeout(() => {
+                            marqueeLines.forEach(line => line.remove());
+                            resultElement.textContent = options[finalIndex];
+                            resultElement.style.display = 'block';
+                            resultElement.classList.add('show');
+                            
+                            // 重新启用按钮
+                            setTimeout(() => {
+                                decideBtn.disabled = false;
+                                decideBtn.textContent = '启动观察';
+                            }, 300);
+                        }, 300);
+                    }
+                }
+
+                // 开始跑马灯动画
+                animateMarquee();
+            });
+        });
+    </script>
+</body>
+</html>
