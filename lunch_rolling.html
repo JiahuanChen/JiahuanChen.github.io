@@ -197,7 +197,14 @@
         <div class="result-container">
             <div id="result" class="result"></div>
         </div>
-        <button id="decide-btn" class="btn">帮我决定吃什么</button>
+        <div id="usage-info" style="margin: 10px 0; text-align: center; color: #666;">
+            <span id="remaining-count">今日剩余次数: 5</span>
+        </div>
+        <div id="history-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; display: none;">
+            <h3 style="margin-top: 0; color: #333;">今日观察记录</h3>
+            <ul id="history-list" style="list-style-type: none; padding: 0; margin: 0;"></ul>
+        </div>
+        <button id="decide-btn" class="btn">启动观察</button>
         
         <!-- 使用说明（移至页面底部） -->
         <div style="margin-top: 50px; font-size: 12px; color: #666; text-align: left;">
@@ -306,12 +313,87 @@
     </script>
     
     <script>
+        // localStorage键名
+        const STORAGE_KEY = 'lunch_rolling_data';
+        
+        // 获取今天的日期字符串 (YYYY-MM-DD)
+        function getTodayString() {
+            const now = new Date();
+            return now.getFullYear() + '-' + 
+                   String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(now.getDate()).padStart(2, '0');
+        }
+        
+        // 获取或初始化localStorage数据
+        function getStorageData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                return JSON.parse(data);
+            }
+            return {
+                date: getTodayString(),
+                count: 0,
+                history: []
+            };
+        }
+        
+        // 保存数据到localStorage
+        function saveStorageData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+        
+        // 更新显示
+        function updateDisplay(data) {
+            const remainingCountElement = document.getElementById('remaining-count');
+            const historyContainer = document.getElementById('history-container');
+            const historyList = document.getElementById('history-list');
+            
+            // 更新剩余次数显示
+            remainingCountElement.textContent = `今日剩余次数: ${5 - data.count}`;
+            
+            // 更新历史记录显示
+            if (data.history.length > 0) {
+                historyContainer.style.display = 'block';
+                historyList.innerHTML = '';
+                // 按时间倒序显示（最新的在上面）
+                const historyItems = data.history.slice().reverse();
+                historyItems.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${item.time} - ${item.result}`;
+                    li.style.padding = '5px 0';
+                    li.style.borderBottom = '1px solid #eee';
+                    // 最新的结果保持原色，之前的结果显示为浅灰色
+                    if (index > 0) {
+                        li.style.color = '#999';
+                    }
+                    historyList.appendChild(li);
+                });
+            } else {
+                historyContainer.style.display = 'none';
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // 只有在密码验证通过后才会执行此代码
             const decideBtn = document.getElementById('decide-btn');
             const resultContainer = document.querySelector('.result-container');
             const resultElement = document.getElementById('result');
             let options = LUNCH_OPTIONS; // 使用全局配置变量
+            
+            // 初始化数据
+            let storageData = getStorageData();
+            const today = getTodayString();
+            
+            // 检查日期是否变化，如果变化则重置计数
+            if (storageData.date !== today) {
+                storageData.date = today;
+                storageData.count = 0;
+                storageData.history = [];
+                saveStorageData(storageData);
+            }
+            
+            // 更新初始显示
+            updateDisplay(storageData);
 
             // 创建额外的结果项用于动画
             function createResultItems() {
@@ -329,6 +411,12 @@
             }
 
             decideBtn.addEventListener('click', function() {
+                // 检查是否还有剩余次数
+                if (storageData.count >= 5) {
+                    alert('今日随机次数已用完！');
+                    return;
+                }
+                
                 // 禁用按钮防止重复点击
                 decideBtn.disabled = true;
                 decideBtn.textContent = '世界线修改中...';
@@ -400,6 +488,7 @@
                     } else {
                         // 停止在随机选项上
                         const finalIndex = Math.floor(Math.random() * options.length);
+                        const result = options[finalIndex];
                         
                         // 更新所有行，确保中间行显示最终结果
                         marqueeLines.forEach((line, index) => {
@@ -410,14 +499,33 @@
                         // 移除跑马灯元素，显示最终结果
                         setTimeout(() => {
                             marqueeLines.forEach(line => line.remove());
-                            resultElement.textContent = options[finalIndex];
+                            resultElement.textContent = result;
                             resultElement.style.display = 'block';
                             resultElement.classList.add('show');
                             
+                            // 更新计数和历史记录
+                            storageData.count++;
+                            const now = new Date();
+                            const timeString = String(now.getHours()).padStart(2, '0') + ':' + 
+                                             String(now.getMinutes()).padStart(2, '0') + ':' + 
+                                             String(now.getSeconds()).padStart(2, '0');
+                            storageData.history.push({
+                                time: timeString,
+                                result: result
+                            });
+                            saveStorageData(storageData);
+                            updateDisplay(storageData);
+                            
                             // 重新启用按钮
                             setTimeout(() => {
-                                decideBtn.disabled = false;
-                                decideBtn.textContent = '启动观察';
+                                // 检查是否还有剩余次数
+                                if (storageData.count >= 5) {
+                                    decideBtn.disabled = true;
+                                    decideBtn.textContent = '今日次数已用完';
+                                } else {
+                                    decideBtn.disabled = false;
+                                    decideBtn.textContent = '启动观察';
+                                }
                             }, 300);
                         }, 300);
                     }
