@@ -164,6 +164,117 @@
             margin-bottom: 5px;
             color: #555;
         }
+        
+        /* 选项管理区域样式 */
+        .options-manager {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 550px;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        .option-item:hover {
+            background-color: #f1f1f1;
+        }
+        .option-name {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .probability-control {
+            display: flex;
+            align-items: center;
+            flex: 2;
+            margin-right: 10px;
+        }
+        .probability-slider {
+            flex: 1;
+            margin: 0 5px;
+            max-width: 120px;
+        }
+        .probability-value {
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #3498db;
+            font-size: 12px;
+        }
+        .delete-option-btn {
+            background-color: #e74c3c;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .delete-option-btn:hover {
+            background-color: #c0392b;
+        }
+        .add-option-btn {
+            background-color: #27ae60;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .add-option-btn:hover {
+            background-color: #229954;
+        }
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #555;
+        }
+        .option-header > div {
+            padding: 0 10px;
+        }
+        .header-name {
+            flex: 1;
+        }
+        .header-probability {
+            flex: 2;
+            text-align: center;
+        }
+        
+        /* 滑块样式 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: 2px solid #2980b9;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: 2px solid #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +305,12 @@
                 });
             });
         </script>
+        
+        <!-- 添加选项按钮（编辑模式下显示） -->
+        <button id="add-option-btn" class="btn add-option-btn" style="display: none; font-size: 12px; padding: 8px 16px; margin-bottom: 20px;">添加选项</button>
+        
+        <button id="edit-toggle-btn" class="btn" style="font-size: 12px; padding: 8px 16px; margin-bottom: 20px;">编辑选项</button>
+        
         <div class="result-container">
             <div id="result" class="result"></div>
         </div>
@@ -206,9 +323,11 @@
         </div>
         <button id="decide-btn" class="btn">启动观察</button>
         
+
+        
         <!-- 使用说明（移至页面底部） -->
         <div style="margin-top: 50px; font-size: 12px; color: #666; text-align: left;">
-            <p>* 使用说明：在URL后添加 <code>?options=选项1,选项2,选项3</code> 来自定义午餐选项，例如：http://xxxxx/lunch_rolling.html?options=麦当劳,肯德基,星巴克 </p>
+            <p>* 使用说明：在URL后添加 <code>?options=选项1,选项2,选项3</code> 来自定义午餐选项</p>
         </div>
     </div>
 
@@ -268,48 +387,331 @@
     
     <!-- 配置变量 -->
     <script>
-        // 从URL参数中获取选项或使用默认选项
-        let LUNCH_OPTIONS = [];
-        const DEFAULT_OPTIONS = [
-            '南昌拌粉',
-            '袁记云饺',
-            '草根食堂',
-            '盖浇饭',
-            '河南烩面',
-            '馄饨店',
-            '蒋师傅',
-            '兰州拉面'
+        // 从localStorage获取配置或使用默认配置
+        let LUNCH_OPTIONS_CONFIG = [];
+        const DEFAULT_OPTIONS_CONFIG = [
+            { name: '南昌拌粉', probability: 12.5 },
+            { name: '袁记云饺', probability: 12.5 },
+            { name: '草根食堂', probability: 12.5 },
+            { name: '盖浇饭', probability: 12.5 },
+            { name: '河南烩面', probability: 12.5 },
+            { name: '馄饨店', probability: 12.5 },
+            { name: '蒋师傅', probability: 12.5 },
+            { name: '兰州拉面', probability: 12.5 }
         ];
+        const CONFIG_STORAGE_KEY = 'lunch_rolling_config';
         
-        // 初始化选项
-        function initOptions() {
+        // 获取或初始化配置
+        function getOrInitConfig() {
             try {
-                // 解析URL参数
-                const urlParams = new URLSearchParams(window.location.search);
-                const optionsParam = urlParams.get('options');
-                
-                if (optionsParam) {
-                    // 解析逗号分隔的选项字符串
-                    LUNCH_OPTIONS = optionsParam.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
-                    console.log('成功从URL参数加载选项');
-                } else {
-                    // 使用默认选项
-                    LUNCH_OPTIONS = DEFAULT_OPTIONS;
-                    console.log('使用默认选项');
+                const storedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
+                if (storedConfig) {
+                    const parsedConfig = JSON.parse(storedConfig);
+                    // 验证配置格式
+                    if (Array.isArray(parsedConfig) && parsedConfig.length > 0) {
+                        // 确保概率总和为100
+                        normalizeProbabilities(parsedConfig);
+                        console.log('成功从localStorage加载配置');
+                        return parsedConfig;
+                    }
                 }
-                
-                // 确保至少有一个选项
-                if (LUNCH_OPTIONS.length === 0) {
-                    LUNCH_OPTIONS = DEFAULT_OPTIONS;
-                }
+                console.log('使用默认配置');
+                return JSON.parse(JSON.stringify(DEFAULT_OPTIONS_CONFIG)); // 返回副本
             } catch (e) {
-                console.error('解析URL参数失败，使用默认选项', e);
-                LUNCH_OPTIONS = DEFAULT_OPTIONS;
+                console.error('加载配置失败，使用默认配置', e);
+                return JSON.parse(JSON.stringify(DEFAULT_OPTIONS_CONFIG));
             }
         }
         
-        // 初始化选项
-        initOptions();
+        // 保存配置到localStorage
+        function saveConfig(config) {
+            try {
+                localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+                console.log('配置已保存');
+            } catch (e) {
+                console.error('保存配置失败', e);
+            }
+        }
+        
+        // 标准化概率，确保总和为100
+        function normalizeProbabilities(config) {
+            const total = config.reduce((sum, item) => sum + item.probability, 0);
+            if (total > 0) {
+                config.forEach(item => {
+                    item.probability = (item.probability / total) * 100;
+                });
+            }
+        }
+        
+        // 初始化配置
+        LUNCH_OPTIONS_CONFIG = getOrInitConfig();
+        
+        // 不再需要renderOptionsManager函数，已被renderEditableOptions替代
+
+        
+        // 渲染选项列表（查看模式）
+        function renderOptionsList() {
+            const optionsList = document.getElementById('options-list');
+            optionsList.innerHTML = '';
+            
+            LUNCH_OPTIONS_CONFIG.forEach((option) => {
+                const li = document.createElement('li');
+                li.textContent = `${option.name} (${option.probability.toFixed(1)}%)`;
+                li.style.marginBottom = '5px';
+                li.style.color = '#555';
+                optionsList.appendChild(li);
+            });
+        }
+        
+        // 切换编辑/查看模式
+        function toggleEditMode() {
+            const editToggleBtn = document.getElementById('edit-toggle-btn');
+            const addOptionBtn = document.getElementById('add-option-btn');
+            const optionsList = document.getElementById('options-list');
+            const editMode = editToggleBtn.textContent === '编辑选项';
+            
+            if (editMode) {
+                // 切换到编辑模式
+                editToggleBtn.textContent = '完成';
+                editToggleBtn.style.backgroundColor = '#27ae60';
+                addOptionBtn.style.display = 'block';
+                renderEditableOptions();
+            } else {
+                // 切换到查看模式
+                editToggleBtn.textContent = '编辑选项';
+                editToggleBtn.style.backgroundColor = '#3498db';
+                addOptionBtn.style.display = 'none';
+                renderOptionsList();
+            }
+        }
+        
+        // 渲染可编辑的选项列表
+        function renderEditableOptions() {
+            const optionsList = document.getElementById('options-list');
+            optionsList.innerHTML = '';
+            
+            LUNCH_OPTIONS_CONFIG.forEach((option, index) => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                li.dataset.index = index;
+                
+                li.innerHTML = `
+                    <input type="text" class="option-name" value="${option.name}" placeholder="输入选项名称">
+                    <div class="probability-control">
+                        <input type="range" class="probability-slider" min="0" max="100" step="1" value="${Math.round(option.probability)}">
+                        <span class="probability-value">${option.probability.toFixed(1)}%</span>
+                    </div>
+                    <button class="btn delete-option-btn" ${LUNCH_OPTIONS_CONFIG.length <= 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed; padding: 4px 8px; font-size: 12px; margin-left: 10px;"' : 'style="padding: 4px 8px; font-size: 12px; margin-left: 10px;"'}>删除</button>
+                `;
+                
+                optionsList.appendChild(li);
+                
+                // 添加事件监听器
+                const nameInput = li.querySelector('.option-name');
+                nameInput.addEventListener('input', handleOptionNameChange);
+                
+                const slider = li.querySelector('.probability-slider');
+                slider.addEventListener('input', handleRealTimeProbabilityChange);
+                slider.addEventListener('change', handleProbabilityChange);
+                
+                const deleteBtn = li.querySelector('.delete-option-btn');
+                deleteBtn.addEventListener('click', handleDeleteOption);
+            });
+        }
+        
+        // 处理选项名称变化
+        function handleOptionNameChange(event) {
+            const index = parseInt(event.target.closest('.option-item').dataset.index);
+            const newName = event.target.value.trim();
+            if (newName) {
+                LUNCH_OPTIONS_CONFIG[index].name = newName;
+                saveConfig(LUNCH_OPTIONS_CONFIG);
+            }
+        }
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // 实时更新显示的概率值（仅更新显示，不改变数据和其他选项）
+        function handleRealTimeProbabilityChange(event) {
+            const index = parseInt(event.target.closest('.option-item').dataset.index);
+            const currentValue = parseFloat(event.target.value);
+            
+            // 更新当前滑块显示的值
+            const probabilityValue = event.target.nextElementSibling;
+            probabilityValue.textContent = `${currentValue.toFixed(1)}%`;
+            
+            // 计算临时差值
+            const tempDiff = currentValue - LUNCH_OPTIONS_CONFIG[index].probability;
+            
+            // 更新所有其他选项的显示值（临时计算，不修改实际数据）
+            const otherCount = LUNCH_OPTIONS_CONFIG.length - 1;
+            const tempPerDiff = otherCount > 0 ? -tempDiff / otherCount : 0;
+            
+            // 获取所有滑块和概率显示元素
+            const allOptionItems = document.querySelectorAll('.option-item');
+            
+            allOptionItems.forEach((item, idx) => {
+                if (idx !== index) {
+                    // 计算临时概率值
+                    const tempProbability = Math.max(0, LUNCH_OPTIONS_CONFIG[idx].probability + tempPerDiff);
+                    
+                    // 更新滑块和显示
+                    const sliderElement = item.querySelector('.probability-slider');
+                    const valueElement = item.querySelector('.probability-value');
+                    if (sliderElement) {
+                        sliderElement.value = Math.round(tempProbability);
+                    }
+                    if (valueElement) {
+                        valueElement.textContent = `${tempProbability.toFixed(1)}%`;
+                    }
+                }
+            });
+        }
+        
+        // 处理概率变化（拖动结束后更新数据和其他选项）
+        function handleProbabilityChange(event) {
+            const index = parseInt(event.target.closest('.option-item').dataset.index);
+            let newProbability = parseFloat(event.target.value);
+            
+            // 限制概率范围
+            if (newProbability < 0) newProbability = 0;
+            if (newProbability > 100) newProbability = 100;
+            
+            // 计算差值
+            const diff = newProbability - LUNCH_OPTIONS_CONFIG[index].probability;
+            LUNCH_OPTIONS_CONFIG[index].probability = newProbability;
+            
+            // 平均分配差值给其他选项
+            if (LUNCH_OPTIONS_CONFIG.length > 1) {
+                const otherCount = LUNCH_OPTIONS_CONFIG.length - 1;
+                const perDiff = -diff / otherCount;
+                
+                // 批量更新内存中的概率值
+                LUNCH_OPTIONS_CONFIG.forEach((option, idx) => {
+                    if (idx !== index) {
+                        let newVal = option.probability + perDiff;
+                        // 确保概率不为负数
+                        if (newVal < 0) newVal = 0;
+                        option.probability = newVal;
+                    }
+                });
+                
+                // 确保总概率正好是100
+                normalizeProbabilities(LUNCH_OPTIONS_CONFIG);
+                
+                // 更新所有滑块和显示值
+                const allSliders = document.querySelectorAll('.probability-slider');
+                const allValues = document.querySelectorAll('.probability-value');
+                
+                LUNCH_OPTIONS_CONFIG.forEach((option, idx) => {
+                    if (allSliders[idx]) {
+                        allSliders[idx].value = Math.round(option.probability);
+                    }
+                    if (allValues[idx]) {
+                        allValues[idx].textContent = `${option.probability.toFixed(1)}%`;
+                    }
+                });
+            }
+            
+            // 保存配置
+            saveConfig(LUNCH_OPTIONS_CONFIG);
+        }
+        
+        // 处理删除选项
+        function handleDeleteOption(event) {
+            const index = parseInt(event.target.closest('.option-item').dataset.index);
+            
+            if (LUNCH_OPTIONS_CONFIG.length > 1) {
+                // 移除选项
+                LUNCH_OPTIONS_CONFIG.splice(index, 1);
+                
+                // 重新分配概率
+                const newProbabilityPerItem = 100 / LUNCH_OPTIONS_CONFIG.length;
+                LUNCH_OPTIONS_CONFIG.forEach(option => {
+                    option.probability = newProbabilityPerItem;
+                });
+                
+                // 重新渲染界面
+                renderEditableOptions();
+                saveConfig(LUNCH_OPTIONS_CONFIG);
+            }
+        }
+        
+        // 添加新选项
+        function addNewOption() {
+            const newProbability = 100 / (LUNCH_OPTIONS_CONFIG.length + 1);
+            
+            // 按比例调整现有选项的概率
+            LUNCH_OPTIONS_CONFIG.forEach(option => {
+                option.probability = newProbability;
+            });
+            
+            // 添加新选项
+            LUNCH_OPTIONS_CONFIG.push({ name: '新选项', probability: newProbability });
+            
+            // 重新渲染界面（在编辑模式下直接更新可编辑列表）
+            const editToggleBtn = document.getElementById('edit-toggle-btn');
+            if (editToggleBtn.textContent === '完成') {
+                renderEditableOptions();
+            } else {
+                renderOptionsList();
+            }
+            
+            saveConfig(LUNCH_OPTIONS_CONFIG);
+            
+            // 聚焦到新添加的选项
+            setTimeout(() => {
+                const newOption = document.querySelector('.option-item:last-child .option-name');
+                if (newOption) {
+                    newOption.select();
+                }
+            }, 10);
+        }
+        
+        // 根据概率随机选择一个选项
+        function selectByProbability(options) {
+            const random = Math.random() * 100;
+            let cumulativeProbability = 0;
+            
+            for (const option of options) {
+                cumulativeProbability += option.probability;
+                if (random < cumulativeProbability) {
+                    return option.name;
+                }
+            }
+            
+            // 保险起见，返回第一个选项
+            return options[0]?.name || '';
+        }
+        
+        // 初始化选项管理界面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加选项按钮事件
+            const addButton = document.getElementById('add-option-btn');
+            if (addButton) {
+                addButton.addEventListener('click', addNewOption);
+            }
+            
+            // 编辑模式切换按钮事件
+            const editToggleBtn = document.getElementById('edit-toggle-btn');
+            if (editToggleBtn) {
+                editToggleBtn.addEventListener('click', toggleEditMode);
+            }
+            
+            // 初始化显示查看模式
+            renderOptionsList();
+        })
     </script>
     
     <script>
@@ -378,7 +780,9 @@
             const decideBtn = document.getElementById('decide-btn');
             const resultContainer = document.querySelector('.result-container');
             const resultElement = document.getElementById('result');
-            let options = LUNCH_OPTIONS; // 使用全局配置变量
+            
+            // 初始化选项列表（查看模式）
+            renderOptionsList();
             
             // 初始化数据
             let storageData = getStorageData();
@@ -473,6 +877,7 @@
                     }
 
                     // 更新显示的选项，让多行显示不同的内容
+                    const options = LUNCH_OPTIONS_CONFIG.map(option => option.name);
                     marqueeLines.forEach((line, index) => {
                         // 每行显示不同的选项，形成滚动效果
                         const lineIndex = (currentIndex + index) % options.length;
@@ -486,9 +891,12 @@
                     if (elapsedTime < totalDuration) {
                         setTimeout(animateMarquee, speed);
                     } else {
-                        // 停止在随机选项上
-                        const finalIndex = Math.floor(Math.random() * options.length);
-                        const result = options[finalIndex];
+                        // 停止在根据概率随机选择的选项上
+                        const result = selectByProbability(LUNCH_OPTIONS_CONFIG);
+                        const options = LUNCH_OPTIONS_CONFIG.map(option => option.name);
+                        
+                        // 找到结果对应的索引
+                        const finalIndex = options.indexOf(result);
                         
                         // 更新所有行，确保中间行显示最终结果
                         marqueeLines.forEach((line, index) => {
